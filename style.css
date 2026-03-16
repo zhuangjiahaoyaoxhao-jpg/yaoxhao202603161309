@@ -1,0 +1,531 @@
+:root {
+    --primary-color: #ff9a9e;
+    --secondary-color: #fecfef;
+    --accent-color: #a18cd1;
+    --text-color: #555;
+    --white: #ffffff;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Serif SC', serif;
+    background: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);
+    min-height: 100vh;
+    min-height: 100dvh; /* 适配移动端动态视口 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: var(--text-color);
+}
+
+/* 烟花画布 */
+#fireworksCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+    pointer-events: none;
+}
+
+/* 背景漂浮动画 */
+.background-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.balloon {
+    position: absolute;
+    bottom: -100px;
+    width: 50px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    animation: floatUp 15s linear infinite;
+}
+
+.balloon::before {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes floatUp {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.8; }
+    100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+}
+
+/* 主容器 */
+.container {
+    text-align: center;
+    width: 90%;
+    max-width: 600px;
+    padding: 20px;
+    z-index: 10;
+    position: relative;
+    /* 移除固定 min-height，改用更灵活的布局 */
+    height: 100%; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* 区域切换逻辑 */
+.section {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    width: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* 确保内容不会溢出屏幕 */
+    max-height: 90vh;
+    overflow-y: auto;
+    /* 隐藏滚动条但保留功能 */
+    scrollbar-width: none; 
+}
+.section::-webkit-scrollbar { 
+    display: none; 
+}
+
+.section.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -40%);
+    visibility: hidden;
+}
+
+.section.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+    visibility: visible;
+}
+
+/* 祝福展示区样式 */
+.cake-container {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.cake-icon {
+    font-size: 5rem;
+    animation: bounce 2s infinite;
+}
+
+.candle {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 25px;
+    background: repeating-linear-gradient(45deg, #f0e68c, #f0e68c 5px, #ff69b4 5px, #ff69b4 10px);
+    display: none;
+}
+
+.title {
+    font-family: 'Dancing Script', cursive;
+    font-size: 4rem;
+    margin-bottom: 20px;
+    color: var(--white);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.message-box {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    text-align: left;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.message-box p {
+    margin-bottom: 10px;
+    color: #444;
+}
+
+.fade-in-text {
+    opacity: 0;
+    animation: fadeIn 1s forwards;
+}
+
+.delay-1 { animation-delay: 0.5s; }
+.delay-2 { animation-delay: 1.5s; }
+.delay-3 { animation-delay: 2.5s; }
+.delay-4 { animation-delay: 3.5s; }
+.delay-5 { animation-delay: 4.5s; }
+
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+/* 按钮样式 */
+.primary-btn {
+    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 154, 158, 0.5);
+    transition: all 0.3s ease;
+    font-family: inherit;
+    font-weight: bold;
+    /* 防止移动端点击高亮背景 */
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.primary-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 154, 158, 0.7);
+}
+
+.pulse-button {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 154, 158, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 154, 158, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 154, 158, 0); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* 许愿卡片区样式 */
+.wish-card {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    position: relative;
+}
+
+.back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 0.9rem;
+    color: #999;
+    cursor: pointer;
+    transition: color 0.3s;
+    padding: 10px; /* 增加点击区域 */
+}
+
+.back-btn:hover {
+    color: var(--primary-color);
+}
+
+.wish-card h2 {
+    color: var(--accent-color);
+    margin-bottom: 10px;
+    font-size: 1.8rem;
+}
+
+.instruction-text {
+    font-size: 0.95rem;
+    color: #777;
+    margin-bottom: 25px;
+    font-style: italic;
+}
+
+textarea {
+    width: 100%;
+    height: 150px;
+    padding: 15px;
+    border: 2px solid #eee;
+    border-radius: 10px;
+    resize: none;
+    font-family: inherit;
+    font-size: 1rem;
+    margin-bottom: 25px;
+    transition: border-color 0.3s ease;
+    background: #fdfdfd;
+    /* 移动端输入体验优化 */
+    -webkit-appearance: none;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: white;
+}
+
+.send-btn {
+    background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
+    color: white;
+    border: none;
+    padding: 12px 35px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(161, 140, 209, 0.4);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.send-btn:hover {
+    transform: scale(1.05);
+}
+
+/* 弹窗样式 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-content {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    position: relative;
+    max-width: 90%;
+    width: 400px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+    animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideIn {
+    from { transform: translateY(100px) scale(0.8); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+    padding: 5px; /* 增加点击区域 */
+    line-height: 1;
+}
+
+.modal-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.blessing-text {
+    font-size: 1.2rem;
+    color: #555;
+    margin-bottom: 25px;
+    font-weight: bold;
+}
+
+/* 语音条样式 */
+.voice-message-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.voice-bubble {
+    background-color: #95ec69;
+    padding: 10px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    min-width: 200px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+    transition: background-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.voice-bubble:hover {
+    background-color: #89d961;
+}
+
+.voice-bubble:active {
+    background-color: #7cc456;
+}
+
+.voice-icon {
+    margin-right: 10px;
+    font-size: 1.2rem;
+}
+
+.voice-duration {
+    margin-left: auto;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.voice-wave {
+    display: flex;
+    align-items: center;
+    height: 15px;
+    margin-left: 5px;
+}
+
+.voice-wave .bar {
+    width: 3px;
+    background-color: #333;
+    margin: 0 1px;
+    border-radius: 2px;
+    animation: soundWave 0.8s infinite ease-in-out;
+    opacity: 0.6;
+}
+
+.voice-wave .bar1 { height: 6px; animation-delay: 0.1s; }
+.voice-wave .bar2 { height: 10px; animation-delay: 0.2s; }
+.voice-wave .bar3 { height: 8px; animation-delay: 0.3s; }
+
+.voice-bubble.playing .bar {
+    animation-play-state: running;
+}
+.voice-bubble:not(.playing) .bar {
+    animation-play-state: paused;
+    height: 3px;
+}
+
+@keyframes soundWave {
+    0%, 100% { height: 5px; }
+    50% { height: 15px; }
+}
+
+.tip-text {
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-top: 8px;
+}
+
+.small-text {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 10px;
+}
+
+/* =========================================
+   移动端优先适配 (Mobile First Adjustment)
+   ========================================= */
+
+@media (max-width: 600px) {
+    /* 容器调整：减少内边距，利用更多屏幕空间 */
+    .container {
+        width: 95%;
+        padding: 15px;
+    }
+
+    /* 标题调整：缩小字号防止换行过多 */
+    .title { 
+        font-size: 3rem; 
+        margin-bottom: 15px;
+    }
+
+    /* 蛋糕图标调整 */
+    .cake-icon {
+        font-size: 4rem;
+    }
+
+    /* 消息框调整：减少内边距，字号适中 */
+    .message-box { 
+        padding: 20px; 
+        font-size: 1rem; 
+        margin-bottom: 20px;
+        max-height: 40vh; /* 防止内容过长超出 */
+        overflow-y: auto;
+    }
+
+    /* 按钮调整：增大点击区域，更适合手指 */
+    .primary-btn {
+        padding: 12px 30px;
+        font-size: 1.1rem;
+        width: 80%; /* 按钮更宽 */
+    }
+
+    /* 许愿卡片调整 */
+    .wish-card { 
+        padding: 25px 20px; 
+    }
+
+    .wish-card h2 {
+        font-size: 1.5rem;
+    }
+
+    textarea {
+        height: 120px; /* 稍微减小高度以防键盘遮挡 */
+        font-size: 1rem;
+    }
+
+    .send-btn {
+        width: 80%;
+        padding: 12px 0;
+    }
+
+    /* 弹窗调整 */
+    .modal-content {
+        padding: 30px 20px;
+        width: 85%;
+    }
+
+    .modal-icon {
+        font-size: 2.5rem;
+    }
+
+    .blessing-text {
+        font-size: 1.1rem;
+    }
+
+    /* 气球调整：移动端可以稍微减少气球大小 */
+    .balloon {
+        width: 40px;
+        height: 50px;
+    }
+}
+
+/* 针对超小屏幕 (如 iPhone SE) */
+@media (max-width: 350px) {
+    .title { font-size: 2.5rem; }
+    .message-box { font-size: 0.9rem; padding: 15px; }
+    h2 { font-size: 1.3rem; }
+}
