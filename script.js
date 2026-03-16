@@ -9,17 +9,104 @@ document.addEventListener('DOMContentLoaded', () => {
     const startWishBtn = document.getElementById('startWishBtn');
     const backToGreetingBtn = document.getElementById('backToGreeting');
     
-    const wishBtn = document.getElementById('wishBtn');
+    const readyToBlowBtn = document.getElementById('readyToBlowBtn'); 
     const wishInput = document.getElementById('wishInput');
+    
+    const candleOverlay = document.getElementById('candleOverlay');
+    const flame = document.getElementById('flame');
+    const blowInstruction = document.getElementById('blowInstruction');
+    
     const modal = document.getElementById('modal');
     const closeBtn = document.querySelector('.close-btn');
     
     const playVoiceBtn = document.getElementById('playVoiceBtn');
     const bgm = document.getElementById('bgm');
     const voiceBubble = document.querySelector('.voice-bubble');
+    const musicControl = document.getElementById('musicControl');
+    
+    // 新增 DOM 元素
+    const wishDisplay = document.getElementById('wishDisplay');
+    const wishContent = document.getElementById('wishContent');
+    const giftAlert = document.getElementById('giftAlert');
+    const acceptGiftBtn = document.getElementById('acceptGiftBtn');
 
-    // 3. 视图切换逻辑
+    // 3. 音乐预加载与控制
+    let musicReady = false;
+    
+    // 监听音频加载错误
+    bgm.addEventListener('error', (e) => {
+        console.error("音频加载错误", e);
+        musicControl.innerHTML = "❌ 音乐文件丢失 (birthday.mp3)";
+        musicControl.classList.remove('hidden');
+        musicControl.style.animation = "none";
+        musicControl.style.background = "#ffcccc";
+    });
+
+    function initMusic() {
+        if (!musicReady) {
+            bgm.load();
+            bgm.play().then(() => {
+                musicReady = true;
+                musicControl.classList.add('hidden');
+                console.log("音乐已就绪，开始播放");
+                
+                // 标记为正在播放
+                isPlaying = true;
+                voiceBubble.classList.add('playing');
+
+                // 特殊情况：如果当前正好在吹蜡烛界面（理论上不太可能，除非直接跳过），则降低音量
+                if (!candleOverlay.classList.contains('hidden')) {
+                    bgm.volume = 0.2;
+                } else {
+                    bgm.volume = 1.0;
+                }
+            }).catch(e => {
+                console.log("自动播放被阻止，显示手动播放按钮", e);
+                musicControl.classList.remove('hidden');
+            });
+        }
+    }
+
+    // 监听任意交互事件来初始化音乐 (尽可能早地触发)
+    const interactionEvents = ['click', 'touchstart', 'scroll', 'mousemove', 'keydown'];
+    interactionEvents.forEach(event => {
+        document.body.addEventListener(event, initMusic, { once: true });
+    });
+
+    // 尝试在页面加载完成后立即自动播放
+    setTimeout(() => {
+        initMusic();
+    }, 500);
+
+    musicControl.addEventListener('click', () => {
+        if (isPlaying) {
+            bgm.pause();
+            isPlaying = false;
+            voiceBubble.classList.remove('playing');
+            musicControl.innerHTML = "🔇 点击开启音乐";
+        } else {
+            bgm.play().then(() => {
+                musicReady = true;
+                isPlaying = true;
+                voiceBubble.classList.add('playing');
+                musicControl.classList.add('hidden');
+            }).catch(e => console.error("播放失败", e));
+        }
+    });
+
+    // 4. 视图切换逻辑
     startWishBtn.addEventListener('click', () => {
+        // 移除这里的麦克风权限预授权，根据用户反馈
+        /*
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+             stream.getTracks().forEach(track => track.stop());
+             console.log("麦克风权限已预授权");
+        }).catch(err => {
+             console.warn("麦克风预授权失败:", err);
+             blowInstruction.innerHTML = "麦克风未授权<br><span class='small-hint'>( 请直接点击火焰熄灭它 🔥 )</span>";
+        });
+        */
+
         greetingSection.classList.remove('active');
         greetingSection.classList.add('hidden');
         setTimeout(() => {
@@ -37,8 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     });
 
-    // 4. 许愿发送逻辑
-    wishBtn.addEventListener('click', () => {
+    // 5. 许愿 -> 吹蜡烛 逻辑
+    readyToBlowBtn.addEventListener('click', () => {
         const wishText = wishInput.value.trim();
 
         if (wishText === "") {
@@ -53,24 +140,124 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 直接显示成功弹窗（无需网络请求）
-        showModal();
-        wishInput.value = ""; // 清空输入框
+        // 隐藏许愿卡，显示吹蜡烛界面
+        wishSection.classList.remove('active');
+        wishSection.classList.add('hidden');
+        
+        // 降低音量，以免干扰麦克风检测，同时营造氛围
+        if (isPlaying) {
+            bgm.volume = 0.2; // 降低到 20%
+        }
+        
+        // 显示全屏覆盖层
+        candleOverlay.classList.remove('hidden');
+        setTimeout(() => {
+            candleOverlay.classList.add('active');
+            
+            // 尝试启动麦克风检测 (这里会触发权限询问)
+            startBlowDetection();
+        }, 100);
     });
 
-    // 5. 音乐播放逻辑
-    let isPlaying = false;
+    // 6. 吹灭蜡烛逻辑
+    let isCandleOut = false;
 
-    // 当弹窗出现时，尝试播放音乐
-    function showModal() {
-        modal.classList.remove('hidden');
-        startFireworks(); // 开始放烟花
-        
-        // 尝试自动播放音乐
-        playMusic();
+    // (A) 点击火焰熄灭 (Fallback)
+    flame.addEventListener('click', () => {
+        if (!isCandleOut) {
+            extinguishCandle();
+        }
+    });
+
+    // (B) 麦克风吹气检测
+    async function startBlowDetection() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(stream);
+            const scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
+
+            analyser.smoothingTimeConstant = 0.8;
+            analyser.fftSize = 1024;
+
+            microphone.connect(analyser);
+            analyser.connect(scriptProcessor);
+            scriptProcessor.connect(audioContext.destination);
+
+            scriptProcessor.onaudioprocess = function() {
+                if (isCandleOut) return; 
+
+                const array = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(array);
+                
+                let values = 0;
+                const length = array.length;
+                for (let i = 0; i < length; i++) {
+                    values += array[i];
+                }
+                const average = values / length;
+
+                // 由于背景音乐存在，稍微提高一点检测阈值，避免误触发
+                if (average > 55) { // 原为 45，适当提高
+                    console.log("检测到吹气，音量:", average);
+                    extinguishCandle();
+                    scriptProcessor.disconnect();
+                    analyser.disconnect();
+                    microphone.disconnect();
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            };
+        } catch (err) {
+            console.warn("麦克风不可用:", err);
+            blowInstruction.innerHTML = "无法访问麦克风<br><span class='small-hint'>( 请直接点击火焰熄灭它 🔥 )</span>";
+        }
     }
 
-    // 点击语音条控制播放/暂停
+    function extinguishCandle() {
+        if (isCandleOut) return;
+        isCandleOut = true;
+
+        // 1. 火焰熄灭动画
+        flame.classList.add('extinguished');
+        blowInstruction.style.opacity = '0'; 
+        
+        // 恢复音量
+        bgm.volume = 1.0;
+        // 如果之前没有在播放，尝试播放
+        if (bgm.paused) {
+             bgm.play().catch(e => console.log("恢复播放失败", e));
+             isPlaying = true;
+             voiceBubble.classList.add('playing');
+        }
+
+        // 2. 环境变暗 (关灯效果)
+        document.body.classList.add('dark-mode');
+
+        // 3. 延迟后放烟花 + 弹窗
+        setTimeout(() => {
+            // 隐藏蜡烛层
+            candleOverlay.classList.remove('active');
+            setTimeout(() => { candleOverlay.classList.add('hidden'); }, 500);
+
+            // 开始后续流程 (愿望 -> 礼物 -> 贺卡)
+            startCelebration();
+            
+        }, 1000);
+    }
+
+    // 7. 音乐播放逻辑
+    let isPlaying = false;
+
+    function showModal() {
+        modal.classList.remove('hidden');
+        modal.style.opacity = '1'; // 确保弹窗显示
+        // 不需要在这里强制重播，背景音乐一直在响，除非用户暂停了
+        if (bgm.paused) {
+             playMusic();
+        }
+    }
+
     playVoiceBtn.addEventListener('click', () => {
         if (isPlaying) {
             pauseMusic();
@@ -80,12 +267,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function playMusic() {
+        bgm.currentTime = 0; // 从头播放
         bgm.play().then(() => {
             isPlaying = true;
             voiceBubble.classList.add('playing');
         }).catch(error => {
-            console.log("自动播放被浏览器拦截，需要用户点击:", error);
-            // 如果自动播放失败，状态保持为暂停
+            console.log("播放失败:", error);
             isPlaying = false;
             voiceBubble.classList.remove('playing');
         });
@@ -97,18 +284,48 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceBubble.classList.remove('playing');
     }
 
-    // 6. 关闭弹窗事件
+    // 8. 关闭弹窗事件
     closeBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
-        pauseMusic(); // 关闭弹窗时停止音乐
-        stopFireworks(); // 停止烟花
+        modal.style.opacity = '0';
+        pauseMusic();
+        
+        // 恢复页面
+        document.body.classList.remove('dark-mode');
+        document.querySelector('.container').style.opacity = '1';
+        document.querySelector('.background-animation').style.opacity = '1';
+        // 重置状态
+        isCandleOut = false;
+        flame.classList.remove('extinguished');
+        blowInstruction.style.opacity = '1';
+        greetingSection.classList.remove('hidden');
+        greetingSection.classList.add('active');
+        
+        // 隐藏愿望和礼物
+        wishDisplay.classList.add('hidden');
+        wishDisplay.style.opacity = '0';
+        giftAlert.classList.add('hidden');
+        giftAlert.style.opacity = '0';
     });
 
     window.addEventListener('click', (e) => {
         if (e.target === modal) {
+            // 同上
             modal.classList.add('hidden');
+            modal.style.opacity = '0';
             pauseMusic();
-            stopFireworks();
+            document.body.classList.remove('dark-mode');
+            isCandleOut = false;
+            flame.classList.remove('extinguished');
+            blowInstruction.style.opacity = '1';
+            greetingSection.classList.remove('hidden');
+            greetingSection.classList.add('active');
+            
+             // 隐藏愿望和礼物
+            wishDisplay.classList.add('hidden');
+            wishDisplay.style.opacity = '0';
+            giftAlert.classList.add('hidden');
+            giftAlert.style.opacity = '0';
         }
     });
 
@@ -135,15 +352,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 烟花逻辑 (Canvas) ---
+    // --- 华丽烟花逻辑 (Canvas) - 已移除 ---
+    /*
     const canvas = document.getElementById('fireworksCanvas');
     const ctx = canvas.getContext('2d');
     let fireworks = [];
     let particles = [];
-    let animationId;
     let isFireworksRunning = false;
+    let animationId;
 
-    // 调整画布大小
     function resizeCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -155,154 +372,83 @@ document.addEventListener('DOMContentLoaded', () => {
         return Math.random() * (max - min) + min;
     }
 
-    // 烟花发射点类
+    // 烟花祝福文字粒子
+    class TextParticle {
+        // ... (TextParticle class logic)
+    }
+    let textParticles = [];
+
     class Firework {
-        constructor(sx, sy, tx, ty) {
-            this.x = sx;
-            this.y = sy;
-            this.sx = sx;
-            this.sy = sy;
-            this.tx = tx;
-            this.ty = ty;
-            this.distanceToTarget = Math.sqrt(Math.pow(tx - sx, 2) + Math.pow(ty - sy, 2));
-            this.distanceTraveled = 0;
-            this.coordinates = [];
-            this.coordinateCount = 3;
-            while (this.coordinateCount--) {
-                this.coordinates.push([this.x, this.y]);
-            }
-            this.angle = Math.atan2(ty - sy, tx - sx);
-            this.speed = 2;
-            this.acceleration = 1.05;
-            this.brightness = random(50, 70);
-            this.targetRadius = 1;
-        }
-
-        update(index) {
-            this.coordinates.pop();
-            this.coordinates.unshift([this.x, this.y]);
-
-            if (this.targetRadius < 8) {
-                this.targetRadius += 0.3;
-            } else {
-                this.targetRadius = 1;
-            }
-
-            this.speed *= this.acceleration;
-            const vx = Math.cos(this.angle) * this.speed;
-            const vy = Math.sin(this.angle) * this.speed;
-            this.distanceTraveled = Math.sqrt(Math.pow(this.sx - this.x, 2) + Math.pow(this.sy - this.y, 2));
-
-            if (this.distanceTraveled >= this.distanceToTarget) {
-                createParticles(this.tx, this.ty);
-                fireworks.splice(index, 1);
-            } else {
-                this.x += vx;
-                this.y += vy;
-            }
-        }
-
-        draw() {
-            ctx.beginPath();
-            ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
-            ctx.lineTo(this.x, this.y);
-            ctx.strokeStyle = 'hsl(' + random(0, 360) + ', 100%, ' + this.brightness + '%)';
-            ctx.stroke();
-            
-            ctx.beginPath();
-            ctx.arc(this.tx, this.ty, this.targetRadius, 0, Math.PI * 2);
-            ctx.stroke();
-        }
+        // ... (Firework class logic)
     }
 
-    // 爆炸粒子类
     class Particle {
-        constructor(x, y) {
-            this.x = x;
-            this.y = y;
-            this.coordinates = [];
-            this.coordinateCount = 5;
-            while (this.coordinateCount--) {
-                this.coordinates.push([this.x, this.y]);
-            }
-            this.angle = random(0, Math.PI * 2);
-            this.speed = random(1, 10);
-            this.friction = 0.95;
-            this.gravity = 1;
-            this.hue = random(0, 360);
-            this.brightness = random(50, 80);
-            this.alpha = 1;
-            this.decay = random(0.015, 0.03);
-        }
-
-        update(index) {
-            this.coordinates.pop();
-            this.coordinates.unshift([this.x, this.y]);
-            this.speed *= this.friction;
-            this.x += Math.cos(this.angle) * this.speed;
-            this.y += Math.sin(this.angle) * this.speed + this.gravity;
-            this.alpha -= this.decay;
-
-            if (this.alpha <= this.decay) {
-                particles.splice(index, 1);
-            }
-        }
-
-        draw() {
-            ctx.beginPath();
-            ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
-            ctx.lineTo(this.x, this.y);
-            ctx.strokeStyle = 'hsla(' + this.hue + ', 100%, ' + this.brightness + '%, ' + this.alpha + ')';
-            ctx.stroke();
-        }
+        // ... (Particle class logic)
     }
 
-    function createParticles(x, y) {
-        let particleCount = 30;
-        while (particleCount--) {
-            particles.push(new Particle(x, y));
-        }
+    function createParticles(x, y, hue) {
+        // ...
+    }
+    
+    function createTextFirework() {
+        // ...
+    }
+
+    function drawTextFirework() {
+        // ...
     }
 
     function loop() {
-        if (!isFireworksRunning) return;
-        
-        requestAnimationFrame(loop);
-        
-        // 拖尾效果
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.globalCompositeOperation = 'lighter';
-
-        let i = fireworks.length;
-        while (i--) {
-            fireworks[i].draw();
-            fireworks[i].update(i);
-        }
-
-        let j = particles.length;
-        while (j--) {
-            particles[j].draw();
-            particles[j].update(j);
-        }
-
-        // 随机自动发射烟花
-        if (Math.random() < 0.05) { // 频率
-            fireworks.push(new Firework(canvas.width / 2, canvas.height, random(0, canvas.width), random(0, canvas.height / 2)));
-        }
+        // ...
     }
 
+    let fireworksTimer;
+
     function startFireworks() {
-        if (isFireworksRunning) return;
-        isFireworksRunning = true;
-        loop();
+        // ...
     }
 
     function stopFireworks() {
-        isFireworksRunning = false;
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // 清空画布
-        fireworks = [];
-        particles = [];
+        // ...
+    }
+    */
+
+    function startCelebration() {
+        console.log("Start Celebration triggered");
+        // 显示用户愿望
+        wishContent.textContent = wishInput.value.trim() || "愿望一定会实现";
+        wishDisplay.classList.remove('hidden');
+        wishDisplay.style.opacity = '1'; // 强制显示
+        console.log("Wish displayed");
+
+        // 5秒后显示礼物提醒
+        setTimeout(() => {
+            console.log("Gift Alert triggering");
+            giftAlert.classList.remove('hidden');
+            giftAlert.style.opacity = '1'; // 强制显示
+        }, 5000); 
+    }
+
+    // 礼物查收逻辑
+    acceptGiftBtn.addEventListener('click', () => {
+        giftAlert.classList.add('hidden');
+        giftAlert.style.opacity = '0';
+        
+        // 隐藏愿望文字，显示贺卡
+        wishDisplay.classList.add('hidden');
+        wishDisplay.style.opacity = '0';
+        
+        showModal();
+    });
+
+    function stopFireworks() {
+        // 不再强制停止，除非手动关闭
+        // isFireworksRunning = false;
+        // if (fireworksTimer) clearTimeout(fireworksTimer);
+        // cancelAnimationFrame(animationId);
+        // ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // fireworks = [];
+        // particles = [];
+        // textParticles = [];
     }
 });
