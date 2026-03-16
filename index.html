@@ -8,14 +8,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 全屏烟花画布 -->
-    <canvas id="fireworksCanvas"></canvas>
+    <!-- 全屏烟花画布 (已移除) -->
+    <!-- <canvas id="fireworksCanvas"></canvas> -->
 
-    <!-- 背景音乐 (请确保同目录下有 birthday.mp3 文件) -->
-    <audio id="bgm" src="birthday.mp3" preload="auto"></audio>
+    <!-- 背景音乐 -->
+    <audio id="bgm" src="birthday.mp3" preload="auto" loop autoplay></audio>
 
     <div class="background-animation">
         <!-- 动态生成的漂浮元素 -->
+    </div>
+
+    <!-- 音乐控制按钮 (悬浮) -->
+    <div id="musicControl" class="music-control hidden">
+        🎶 点击开启音乐
     </div>
 
     <div class="container">
@@ -52,33 +57,77 @@
                     <h2>闭上眼睛，许个愿吧 ✨</h2>
                     <p class="instruction-text">在这个神奇的时刻，写下你心底最想实现的愿望...</p>
                     <textarea id="wishInput" placeholder="比如：希望今年暴富，或者变瘦变美..."></textarea>
-                    <button id="wishBtn" class="send-btn">发送给老爷 🙏</button>
+                    <button id="readyToBlowBtn" class="send-btn">愿望许好啦，准备吹蜡烛 🕯️</button>
                 </div>
             </div>
         </section>
 
-        <!-- 自定义弹窗 -->
+        <!-- 第三阶段：吹蜡烛互动层 (全屏覆盖) -->
+        <div id="candleOverlay" class="candle-overlay hidden">
+            <div class="candle-wrapper">
+                <div class="candle-body">
+                    <div class="stripe"></div>
+                    <div class="stripe"></div>
+                    <div class="stripe"></div>
+                    <div class="stripe"></div>
+                    <div class="stripe"></div>
+                </div>
+                <div class="wick"></div>
+                <div class="flame" id="flame"></div>
+            </div>
+            <p class="blow-instruction" id="blowInstruction">
+                请对着麦克风吹气 🌬️<br>
+                <span class="small-hint">( 或者点击火焰熄灭它 )</span>
+            </p>
+        </div>
+
+        <!-- 愿望展示 (烟花阶段显示) -->
+        <div id="wishDisplay" class="wish-display hidden">
+            <h2 class="wish-title">✨ 您的愿望 ✨</h2>
+            <p id="wishContent" class="wish-content"></p>
+            <p class="wish-sub">老爷一定会保佑愿望成真的！🙏</p>
+        </div>
+
+        <!-- 礼物提醒弹窗 -->
+        <div id="giftAlert" class="gift-alert hidden">
+            <div class="gift-box">
+                <div class="gift-icon">🎁</div>
+                <p>有一份神秘礼物正在派送中...</p>
+                <button id="acceptGiftBtn" class="accept-btn">点击查收</button>
+            </div>
+        </div>
+
+        <!-- 自定义弹窗 (生日贺卡) -->
         <div id="modal" class="modal hidden">
-            <div class="modal-content">
+            <div class="modal-content card-style">
                 <span class="close-btn">&times;</span>
-                <div class="modal-icon">�</div>
-                <h3>愿望已收到！</h3>
-                <p class="blessing-text">老爷一定会保佑愿望成真的！🙏</p>
                 
-                <!-- 模拟语音条 -->
-                <div class="voice-message-container" id="playVoiceBtn">
-                    <div class="voice-bubble">
-                        <span class="voice-icon">🔊</span>
-                        <span class="voice-wave">
-                            <span class="bar bar1"></span>
-                            <span class="bar bar2"></span>
-                            <span class="bar bar3"></span>
-                        </span>
-                        <span class="voice-duration">Happy Birthday 🎵</span>
+                <div class="card-inner">
+                    <div class="photo-frame">
+                        <!-- 这里可以替换成你的照片 -->
+                        <img src="photo.jpg" alt="Happy Birthday" class="birthday-photo" onerror="this.src='https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop'">
+                    </div>
+                    
+                    <div class="card-text">
+                        <h3>Happy Birthday!</h3>
+                        <p class="blessing-text">愿所有的美好都如期而至<br>愿你眼里的星星永远闪耀 ✨</p>
+                        
+                        <!-- 模拟语音条 -->
+                        <div class="voice-message-container" id="playVoiceBtn">
+                            <div class="voice-bubble">
+                                <span class="voice-icon">🔊</span>
+                                <span class="voice-wave">
+                                    <span class="bar bar1"></span>
+                                    <span class="bar bar2"></span>
+                                    <span class="bar bar3"></span>
+                                </span>
+                                <span class="voice-duration">点击播放祝福 🎵</span>
+                            </div>
+                        </div>
+                        
+                        <p class="signature">Best Wishes, For You</p>
                     </div>
                 </div>
-
-                <p class="small-text tip-text">( 点击上面的语音条再次播放生日歌 🎶 )</p>
             </div>
         </div>
     </div>
