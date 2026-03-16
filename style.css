@@ -23,6 +23,23 @@ body {
     align-items: center;
     overflow: hidden;
     color: var(--text-color);
+    transition: background 1.5s ease; /* 背景变暗过渡 */
+}
+
+/* 黑暗模式 (吹灭蜡烛后) */
+body.dark-mode {
+    background: #050505 !important; /* 极深的夜空色 */
+}
+
+body.dark-mode .container {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.dark-mode .background-animation {
+    opacity: 0.08;
+    transition: opacity 1s;
+    pointer-events: none;
 }
 
 /* 烟花画布 */
@@ -35,6 +52,22 @@ body {
     z-index: 999;
     pointer-events: none;
 }
+
+/* 音乐控制悬浮按钮 */
+.music-control {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    z-index: 2000;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    animation: bounce 2s infinite;
+}
+.music-control.hidden { display: none; }
 
 /* 背景漂浮动画 */
 .background-animation {
@@ -82,11 +115,11 @@ body {
     padding: 20px;
     z-index: 10;
     position: relative;
-    /* 移除固定 min-height，改用更灵活的布局 */
     height: 100%; 
     display: flex;
     flex-direction: column;
     justify-content: center;
+    transition: opacity 0.5s;
 }
 
 /* 区域切换逻辑 */
@@ -97,10 +130,8 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    /* 确保内容不会溢出屏幕 */
     max-height: 90vh;
     overflow-y: auto;
-    /* 隐藏滚动条但保留功能 */
     scrollbar-width: none; 
 }
 .section::-webkit-scrollbar { 
@@ -133,16 +164,7 @@ body {
     animation: bounce 2s infinite;
 }
 
-.candle {
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 8px;
-    height: 25px;
-    background: repeating-linear-gradient(45deg, #f0e68c, #f0e68c 5px, #ff69b4 5px, #ff69b4 10px);
-    display: none;
-}
+.candle { display: none; } 
 
 .title {
     font-family: 'Dancing Script', cursive;
@@ -196,7 +218,6 @@ body {
     transition: all 0.3s ease;
     font-family: inherit;
     font-weight: bold;
-    /* 防止移动端点击高亮背景 */
     -webkit-tap-highlight-color: transparent;
     user-select: none;
 }
@@ -239,7 +260,7 @@ body {
     color: #999;
     cursor: pointer;
     transition: color 0.3s;
-    padding: 10px; /* 增加点击区域 */
+    padding: 10px;
 }
 
 .back-btn:hover {
@@ -271,7 +292,6 @@ textarea {
     margin-bottom: 25px;
     transition: border-color 0.3s ease;
     background: #fdfdfd;
-    /* 移动端输入体验优化 */
     -webkit-appearance: none;
 }
 
@@ -299,6 +319,230 @@ textarea:focus {
     transform: scale(1.05);
 }
 
+/* =========================================
+   吹蜡烛专属样式 (Candle Blowing Overlay)
+   ========================================= */
+
+.candle-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+}
+
+.candle-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.candle-overlay.hidden {
+    display: none;
+}
+
+.candle-wrapper {
+    position: relative;
+    margin-bottom: 50px;
+    transform: scale(1.5); /* 放大一点更有氛围 */
+}
+
+.candle-body {
+    width: 35px;
+    height: 100px;
+    background: linear-gradient(#e6e6fa, #fff); /* 淡紫色 */
+    border-radius: 3px;
+    border: 1px solid #d3d3d3;
+    position: relative;
+    margin: 0 auto;
+    box-shadow: inset 0 -5px 5px rgba(0,0,0,0.1);
+}
+
+.stripe {
+    width: 100%;
+    height: 10px;
+    background: #ff69b4; /* 粉色条纹 */
+    margin-top: 10px;
+    transform: skewY(-10deg);
+    opacity: 0.3;
+}
+
+.wick {
+    width: 4px;
+    height: 10px;
+    background: #333;
+    margin: 0 auto;
+    position: relative;
+    top: -5px;
+}
+
+.flame {
+    width: 20px;
+    height: 35px;
+    background: #ff9;
+    border-radius: 50% 50% 20% 20%;
+    box-shadow: 
+        0 0 10px 2px rgba(255, 255, 0, 0.5),
+        0 0 20px 5px rgba(255, 165, 0, 0.3),
+        0 -10px 10px 0 rgba(255, 69, 0, 0.2);
+    position: absolute;
+    top: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: flicker 0.1s infinite;
+    cursor: pointer;
+    transition: all 0.5s ease;
+}
+
+/* 火焰熄灭状态 */
+.flame.extinguished {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.1);
+}
+
+@keyframes flicker {
+    0% { transform: translateX(-50%) rotate(-2deg); }
+    20% { transform: translateX(-50%) rotate(1deg); }
+    40% { transform: translateX(-50%) rotate(-1deg); }
+    60% { transform: translateX(-50%) rotate(1deg) scaleY(1.05); }
+    80% { transform: translateX(-50%) rotate(-2deg) scaleY(0.95); }
+    100% { transform: translateX(-50%) rotate(1deg); }
+}
+
+.blow-instruction {
+    color: white;
+    font-size: 1.2rem;
+    text-align: center;
+    margin-top: 20px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    animation: fadeIn 2s infinite alternate;
+}
+
+.small-hint {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    display: block;
+    margin-top: 5px;
+}
+
+
+/* 愿望展示样式 */
+.wish-display {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 2500; /* 确保在烟花画布(999)和覆盖层(2000)之上 */
+    color: white;
+    text-shadow: 0 0 10px rgba(255, 105, 180, 0.8), 0 0 20px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 600px;
+    opacity: 0;
+    animation: fadeInWish 2s forwards;
+    pointer-events: none; 
+}
+
+.wish-display.hidden {
+    display: none;
+    opacity: 0;
+}
+
+@keyframes fadeInWish {
+    from { opacity: 0; transform: translate(-50%, -40%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.wish-title {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: #ffd700;
+}
+
+.wish-content {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    line-height: 1.4;
+    font-family: 'Noto Serif SC', serif;
+}
+
+.wish-sub {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-top: 15px;
+}
+
+/* 礼物提醒弹窗 */
+.gift-alert {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2600; /* 必须最高，确保可以点击 */
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
+    pointer-events: auto; /* 确保可以交互 */
+}
+
+.gift-alert.hidden {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.gift-box {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 80%;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.gift-icon {
+    font-size: 4rem;
+    margin-bottom: 15px;
+    animation: bounce 2s infinite;
+}
+
+.accept-btn {
+    margin-top: 20px;
+    background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+    color: white;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255, 154, 158, 0.4);
+    transition: transform 0.2s;
+}
+
+.accept-btn:hover {
+    transform: scale(1.05);
+}
+
 /* 弹窗样式 */
 .modal {
     position: fixed;
@@ -306,13 +550,15 @@ textarea:focus {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    /* 背景更深一点，突出文字烟花和弹窗 */
+    background: rgba(0, 0, 0, 0.3); 
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 2500;
     opacity: 1;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.5s ease;
+    backdrop-filter: blur(2px); /* 增加一点模糊感 */
 }
 
 .modal.hidden {
@@ -320,84 +566,139 @@ textarea:focus {
     pointer-events: none;
 }
 
-.modal-content {
-    background: white;
-    padding: 40px;
-    border-radius: 20px;
-    text-align: center;
-    position: relative;
+.modal-content.card-style {
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    width: 350px;
     max-width: 90%;
-    width: 400px;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
-    animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* 拍立得/贺卡风格 */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 10px rgba(255,255,255,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform-origin: center;
+    animation: cardFloat 3s ease-in-out infinite alternate;
 }
 
-@keyframes slideIn {
-    from { transform: translateY(100px) scale(0.8); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
+@keyframes cardFloat {
+    from { transform: translateY(0) rotate(0deg); }
+    to { transform: translateY(-10px) rotate(1deg); }
 }
 
-.close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 28px;
-    cursor: pointer;
-    color: #999;
-    padding: 5px; /* 增加点击区域 */
-    line-height: 1;
+.card-inner {
+    border: 2px dashed #ffe5e5;
+    padding: 20px;
+    border-radius: 10px;
 }
 
-.modal-icon {
-    font-size: 3rem;
+.photo-frame {
+    width: 100%;
+    height: 250px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 5px solid white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.birthday-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s;
+}
+
+.photo-frame:hover .birthday-photo {
+    transform: scale(1.1);
+}
+
+.card-text h3 {
+    font-family: 'Dancing Script', cursive;
+    font-size: 2.5rem;
+    color: #ff6b6b;
     margin-bottom: 15px;
 }
 
 .blessing-text {
-    font-size: 1.2rem;
-    color: #555;
-    margin-bottom: 25px;
-    font-weight: bold;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #666;
+    margin-bottom: 20px;
+    font-weight: normal;
+    background: none;
+    -webkit-text-fill-color: initial;
 }
 
-/* 语音条样式 */
+.signature {
+    font-family: 'Dancing Script', cursive;
+    font-size: 1.5rem;
+    color: #999;
+    margin-top: 20px;
+    text-align: right;
+    margin-right: 10px;
+}
+
+/* 覆盖旧的 close-btn 位置 */
+.close-btn {
+    top: -10px;
+    right: -10px;
+    width: 40px;
+    height: 40px;
+    background: #ff6b6b;
+    color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+.close-btn:hover {
+    background: #ff5252;
+    transform: rotate(90deg) scale(1.1);
+}
+
+/* 语音条样式优化 */
 .voice-message-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .voice-bubble {
-    background-color: #95ec69;
-    padding: 10px 20px;
-    border-radius: 8px;
+    background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+    color: white;
+    padding: 12px 25px;
+    border-radius: 50px;
     display: flex;
     align-items: center;
     cursor: pointer;
-    min-width: 200px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    min-width: 220px;
+    box-shadow: 0 5px 15px rgba(161, 140, 209, 0.4);
     position: relative;
-    transition: background-color 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
     -webkit-tap-highlight-color: transparent;
 }
 
 .voice-bubble:hover {
-    background-color: #89d961;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(161, 140, 209, 0.5);
 }
 
 .voice-bubble:active {
-    background-color: #7cc456;
+    transform: scale(0.98);
 }
 
 .voice-icon {
-    margin-right: 10px;
-    font-size: 1.2rem;
+    margin-right: 15px;
+    font-size: 1.3rem;
 }
 
 .voice-duration {
     margin-left: auto;
-    color: #333;
-    font-size: 0.9rem;
+    color: white; /* 文字颜色改为白色 */
+    font-size: 0.95rem;
+    font-weight: 500;
 }
 
 .voice-wave {
@@ -409,11 +710,11 @@ textarea:focus {
 
 .voice-wave .bar {
     width: 3px;
-    background-color: #333;
+    background-color: white; /* 波纹颜色改为白色 */
     margin: 0 1px;
     border-radius: 2px;
     animation: soundWave 0.8s infinite ease-in-out;
-    opacity: 0.6;
+    opacity: 0.9;
 }
 
 .voice-wave .bar1 { height: 6px; animation-delay: 0.1s; }
