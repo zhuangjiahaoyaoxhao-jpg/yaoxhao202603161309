@@ -400,6 +400,16 @@ textarea:focus {
     animation: flicker 0.1s infinite;
     cursor: pointer;
     transition: all 0.5s ease;
+    touch-action: manipulation;
+}
+
+.flame::after {
+    content: '';
+    position: absolute;
+    top: -18px;
+    right: -18px;
+    bottom: -18px;
+    left: -18px;
 }
 
 /* 火焰熄灭状态 */
@@ -801,6 +811,23 @@ textarea:focus {
     .send-btn {
         width: 80%;
         padding: 12px 0;
+    }
+
+    .candle-wrapper {
+        transform: scale(1.75);
+        margin-bottom: 60px;
+    }
+
+    .flame {
+        width: 26px;
+        height: 44px;
+        top: -44px;
+    }
+
+    .blow-instruction {
+        font-size: 1.1rem;
+        width: 85%;
+        line-height: 1.7;
     }
 
     /* 弹窗调整 */
