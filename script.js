@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const wishContent = document.getElementById('wishContent');
     const giftAlert = document.getElementById('giftAlert');
     const acceptGiftBtn = document.getElementById('acceptGiftBtn');
+    const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia('(max-width: 768px)').matches;
+    let micCleanup = null;
 
     // 3. 音乐预加载与控制
     let musicReady = false;
@@ -146,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 降低音量，以免干扰麦克风检测，同时营造氛围
         if (isPlaying) {
-            bgm.volume = 0.2; // 降低到 20%
+            bgm.volume = isMobileDevice ? 0.05 : 0.2;
         }
         
         // 显示全屏覆盖层
@@ -172,42 +174,96 @@ document.addEventListener('DOMContentLoaded', () => {
     // (B) 麦克风吹气检测
     async function startBlowDetection() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('getUserMedia 不可用');
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                    channelCount: 1
+                },
+                video: false
+            });
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
             const analyser = audioContext.createAnalyser();
             const microphone = audioContext.createMediaStreamSource(stream);
-            const scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
-
-            analyser.smoothingTimeConstant = 0.8;
-            analyser.fftSize = 1024;
+            analyser.smoothingTimeConstant = 0.25;
+            analyser.fftSize = 2048;
 
             microphone.connect(analyser);
-            analyser.connect(scriptProcessor);
-            scriptProcessor.connect(audioContext.destination);
+            const dataArray = new Uint8Array(analyser.fftSize);
+            let frameId = 0;
+            let sampleCount = 0;
+            let baselineRmsSum = 0;
+            let baselinePeak = 0;
+            let hitCount = 0;
+            const calibrationFrames = isMobileDevice ? 28 : 20;
+            const requiredHits = isMobileDevice ? 2 : 3;
 
-            scriptProcessor.onaudioprocess = function() {
-                if (isCandleOut) return; 
-
-                const array = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(array);
-                
-                let values = 0;
-                const length = array.length;
-                for (let i = 0; i < length; i++) {
-                    values += array[i];
-                }
-                const average = values / length;
-
-                // 由于背景音乐存在，稍微提高一点检测阈值，避免误触发
-                if (average > 55) { // 原为 45，适当提高
-                    console.log("检测到吹气，音量:", average);
-                    extinguishCandle();
-                    scriptProcessor.disconnect();
-                    analyser.disconnect();
-                    microphone.disconnect();
-                    stream.getTracks().forEach(track => track.stop());
-                }
+            micCleanup = () => {
+                cancelAnimationFrame(frameId);
+                microphone.disconnect();
+                analyser.disconnect();
+                stream.getTracks().forEach(track => track.stop());
+                audioContext.close().catch(() => {});
+                micCleanup = null;
             };
+
+            const detectLoop = () => {
+                if (isCandleOut) {
+                    if (micCleanup) micCleanup();
+                    return;
+                }
+
+                analyser.getByteTimeDomainData(dataArray);
+                let sumSquares = 0;
+                let peak = 0;
+
+                for (let i = 0; i < dataArray.length; i++) {
+                    const normalized = (dataArray[i] - 128) / 128;
+                    const abs = Math.abs(normalized);
+                    sumSquares += normalized * normalized;
+                    if (abs > peak) peak = abs;
+                }
+
+                const rms = Math.sqrt(sumSquares / dataArray.length);
+
+                if (sampleCount < calibrationFrames) {
+                    baselineRmsSum += rms;
+                    baselinePeak = Math.max(baselinePeak, peak);
+                    sampleCount++;
+                    frameId = requestAnimationFrame(detectLoop);
+                    return;
+                }
+
+                const baselineRms = baselineRmsSum / calibrationFrames;
+                const rmsThreshold = Math.max(isMobileDevice ? 0.04 : 0.055, baselineRms * (isMobileDevice ? 1.7 : 2.1));
+                const peakThreshold = Math.max(isMobileDevice ? 0.16 : 0.22, baselinePeak * (isMobileDevice ? 1.4 : 1.8));
+                const isBlowDetected = rms > rmsThreshold || peak > peakThreshold;
+
+                if (isBlowDetected) {
+                    hitCount++;
+                } else {
+                    hitCount = Math.max(0, hitCount - 1);
+                }
+
+                if (hitCount >= requiredHits) {
+                    console.log("检测到吹气，rms:", rms.toFixed(4), "peak:", peak.toFixed(4));
+                    extinguishCandle();
+                    if (micCleanup) micCleanup();
+                    return;
+                }
+
+                frameId = requestAnimationFrame(detectLoop);
+            };
+
+            detectLoop();
         } catch (err) {
             console.warn("麦克风不可用:", err);
             blowInstruction.innerHTML = "无法访问麦克风<br><span class='small-hint'>( 请直接点击火焰熄灭它 🔥 )</span>";
@@ -217,6 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function extinguishCandle() {
         if (isCandleOut) return;
         isCandleOut = true;
+        if (micCleanup) micCleanup();
 
         // 1. 火焰熄灭动画
         flame.classList.add('extinguished');
