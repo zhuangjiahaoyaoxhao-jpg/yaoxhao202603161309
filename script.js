@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wishContent = document.getElementById('wishContent');
     const giftAlert = document.getElementById('giftAlert');
     const acceptGiftBtn = document.getElementById('acceptGiftBtn');
+    const saveStatus = document.getElementById('saveStatus');
     const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia('(max-width: 768px)').matches;
     let micCleanup = null;
 
@@ -111,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         greetingSection.classList.remove('active');
         greetingSection.classList.add('hidden');
+        updateSaveStatus('', '');
         setTimeout(() => {
             wishSection.classList.remove('hidden');
             wishSection.classList.add('active');
@@ -120,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backToGreetingBtn.addEventListener('click', () => {
         wishSection.classList.remove('active');
         wishSection.classList.add('hidden');
+        updateSaveStatus('', '');
         setTimeout(() => {
             greetingSection.classList.remove('hidden');
             greetingSection.classList.add('active');
@@ -127,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 5. 许愿 -> 吹蜡烛 逻辑
-    readyToBlowBtn.addEventListener('click', () => {
+    readyToBlowBtn.addEventListener('click', async () => {
         const wishText = wishInput.value.trim();
 
         if (wishText === "") {
@@ -141,6 +144,20 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => { wishInput.style.borderColor = "#eee"; }, 1000);
             return;
         }
+
+        readyToBlowBtn.disabled = true;
+        readyToBlowBtn.style.opacity = '0.75';
+        updateSaveStatus('正在保存愿望...', 'pending');
+        const saved = await saveWishToFile(wishText);
+        readyToBlowBtn.disabled = false;
+        readyToBlowBtn.style.opacity = '1';
+
+        if (!saved) {
+            updateSaveStatus('保存失败，请先运行 node server.js', 'error');
+            return;
+        }
+
+        updateSaveStatus('愿望已保存到本地 read.text', 'success');
 
         // 隐藏许愿卡，显示吹蜡烛界面
         wishSection.classList.remove('active');
@@ -301,6 +318,46 @@ document.addEventListener('DOMContentLoaded', () => {
             startCelebration();
             
         }, 1000);
+    }
+
+    async function saveWishToFile(wishText) {
+        const endpoints = location.protocol === 'file:'
+            ? ['http://localhost:3000/save-wish', '/save-wish']
+            : ['/save-wish', 'http://localhost:3000/save-wish'];
+
+        for (const endpoint of endpoints) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ wish: wishText }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    return true;
+                }
+            } catch (error) {
+                console.warn("愿望保存失败:", error);
+            }
+        }
+
+        return false;
+    }
+
+    function updateSaveStatus(text, type) {
+        saveStatus.textContent = text;
+        saveStatus.classList.remove('hidden', 'pending', 'success', 'error');
+        if (!text) {
+            saveStatus.classList.add('hidden');
+            return;
+        }
+        saveStatus.classList.add(type || 'pending');
     }
 
     // 7. 音乐播放逻辑
