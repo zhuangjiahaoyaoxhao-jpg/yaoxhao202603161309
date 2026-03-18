@@ -319,6 +319,29 @@ textarea:focus {
     transform: scale(1.05);
 }
 
+.save-status {
+    margin: -10px 0 15px;
+    min-height: 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.save-status.hidden {
+    visibility: hidden;
+}
+
+.save-status.pending {
+    color: #7c69d1;
+}
+
+.save-status.success {
+    color: #2e9b63;
+}
+
+.save-status.error {
+    color: #d24c74;
+}
+
 /* =========================================
    吹蜡烛专属样式 (Candle Blowing Overlay)
    ========================================= */
