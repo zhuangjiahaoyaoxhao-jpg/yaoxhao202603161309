@@ -4,20 +4,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. 获取 DOM 元素
     const greetingSection = document.getElementById('greetingSection');
-    const wishSection = document.getElementById('wishSection');
     
     const startWishBtn = document.getElementById('startWishBtn');
-    const backToGreetingBtn = document.getElementById('backToGreeting');
-    
-    const readyToBlowBtn = document.getElementById('readyToBlowBtn'); 
-    const wishInput = document.getElementById('wishInput');
     
     const candleOverlay = document.getElementById('candleOverlay');
     const flame = document.getElementById('flame');
     const blowInstruction = document.getElementById('blowInstruction');
     
     const modal = document.getElementById('modal');
-    const closeBtn = document.querySelector('.close-btn');
     
     const playVoiceBtn = document.getElementById('playVoiceBtn');
     const bgm = document.getElementById('bgm');
@@ -29,9 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const wishContent = document.getElementById('wishContent');
     const giftAlert = document.getElementById('giftAlert');
     const acceptGiftBtn = document.getElementById('acceptGiftBtn');
-    const saveStatus = document.getElementById('saveStatus');
     const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia('(max-width: 768px)').matches;
     let micCleanup = null;
+    const celebrationMessages = [
+        "愿你从今天起，天天都有小惊喜，所有努力都被温柔回应。",
+        "愿你心里有光、脚下有路，所遇皆美好，所想皆成真。",
+        "愿你被世界温柔偏爱，平安喜乐，闪闪发光。",
+        "愿你笑容常在，梦想不晚，未来每一步都走向热爱。",
+        "愿你把今天的甜，延续成往后每一天的幸福日常。",
+        "愿你既有奔赴山海的勇气，也有被爱包围的底气。"
+    ];
 
     // 3. 音乐预加载与控制
     let musicReady = false;
@@ -99,71 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. 视图切换逻辑
     startWishBtn.addEventListener('click', () => {
-        // 移除这里的麦克风权限预授权，根据用户反馈
-        /*
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-             stream.getTracks().forEach(track => track.stop());
-             console.log("麦克风权限已预授权");
-        }).catch(err => {
-             console.warn("麦克风预授权失败:", err);
-             blowInstruction.innerHTML = "麦克风未授权<br><span class='small-hint'>( 请直接点击火焰熄灭它 🔥 )</span>";
-        });
-        */
-
         greetingSection.classList.remove('active');
         greetingSection.classList.add('hidden');
-        updateSaveStatus('', '');
-        setTimeout(() => {
-            wishSection.classList.remove('hidden');
-            wishSection.classList.add('active');
-        }, 300);
-    });
-
-    backToGreetingBtn.addEventListener('click', () => {
-        wishSection.classList.remove('active');
-        wishSection.classList.add('hidden');
-        updateSaveStatus('', '');
-        setTimeout(() => {
-            greetingSection.classList.remove('hidden');
-            greetingSection.classList.add('active');
-        }, 300);
-    });
-
-    // 5. 许愿 -> 吹蜡烛 逻辑
-    readyToBlowBtn.addEventListener('click', async () => {
-        const wishText = wishInput.value.trim();
-
-        if (wishText === "") {
-            wishInput.style.borderColor = "red";
-            wishInput.animate([
-                { transform: 'translateX(0)' },
-                { transform: 'translateX(-5px)' },
-                { transform: 'translateX(5px)' },
-                { transform: 'translateX(0)' }
-            ], { duration: 300, iterations: 1 });
-            setTimeout(() => { wishInput.style.borderColor = "#eee"; }, 1000);
-            return;
-        }
-
-        readyToBlowBtn.disabled = true;
-        readyToBlowBtn.style.opacity = '0.75';
-        updateSaveStatus('正在保存愿望...', 'pending');
-        const saved = await saveWishToFile(wishText);
-        readyToBlowBtn.disabled = false;
-        readyToBlowBtn.style.opacity = '1';
-
-        if (!saved) {
-            updateSaveStatus('保存失败，请先运行 node server.js', 'error');
-            return;
-        }
-
-        updateSaveStatus('愿望已保存到本地 read.text', 'success');
-
-        // 隐藏许愿卡，显示吹蜡烛界面
-        wishSection.classList.remove('active');
-        wishSection.classList.add('hidden');
-        
-        // 降低音量，以免干扰麦克风检测，同时营造氛围
         if (isPlaying) {
             bgm.volume = isMobileDevice ? 0.05 : 0.2;
         }
@@ -320,47 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     }
 
-    async function saveWishToFile(wishText) {
-        const endpoints = location.protocol === 'file:'
-            ? ['http://localhost:3000/save-wish', '/save-wish']
-            : ['/save-wish', 'http://localhost:3000/save-wish'];
-
-        for (const endpoint of endpoints) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ wish: wishText }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-
-                if (response.ok) {
-                    return true;
-                }
-            } catch (error) {
-                console.warn("愿望保存失败:", error);
-            }
-        }
-
-        return false;
-    }
-
-    function updateSaveStatus(text, type) {
-        saveStatus.textContent = text;
-        saveStatus.classList.remove('hidden', 'pending', 'success', 'error');
-        if (!text) {
-            saveStatus.classList.add('hidden');
-            return;
-        }
-        saveStatus.classList.add(type || 'pending');
-    }
-
-    // 7. 音乐播放逻辑
+    // 5. 音乐播放逻辑
     let isPlaying = false;
 
     function showModal() {
@@ -397,51 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
         isPlaying = false;
         voiceBubble.classList.remove('playing');
     }
-
-    // 8. 关闭弹窗事件
-    closeBtn.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        modal.style.opacity = '0';
-        pauseMusic();
-        
-        // 恢复页面
-        document.body.classList.remove('dark-mode');
-        document.querySelector('.container').style.opacity = '1';
-        document.querySelector('.background-animation').style.opacity = '1';
-        // 重置状态
-        isCandleOut = false;
-        flame.classList.remove('extinguished');
-        blowInstruction.style.opacity = '1';
-        greetingSection.classList.remove('hidden');
-        greetingSection.classList.add('active');
-        
-        // 隐藏愿望和礼物
-        wishDisplay.classList.add('hidden');
-        wishDisplay.style.opacity = '0';
-        giftAlert.classList.add('hidden');
-        giftAlert.style.opacity = '0';
-    });
-
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            // 同上
-            modal.classList.add('hidden');
-            modal.style.opacity = '0';
-            pauseMusic();
-            document.body.classList.remove('dark-mode');
-            isCandleOut = false;
-            flame.classList.remove('extinguished');
-            blowInstruction.style.opacity = '1';
-            greetingSection.classList.remove('hidden');
-            greetingSection.classList.add('active');
-            
-             // 隐藏愿望和礼物
-            wishDisplay.classList.add('hidden');
-            wishDisplay.style.opacity = '0';
-            giftAlert.classList.add('hidden');
-            giftAlert.style.opacity = '0';
-        }
-    });
 
     // --- 辅助函数 ---
 
@@ -529,8 +382,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startCelebration() {
         console.log("Start Celebration triggered");
-        // 显示用户愿望
-        wishContent.textContent = wishInput.value.trim() || "愿望一定会实现";
+        const randomIndex = Math.floor(Math.random() * celebrationMessages.length);
+        wishContent.textContent = celebrationMessages[randomIndex];
         wishDisplay.classList.remove('hidden');
         wishDisplay.style.opacity = '1'; // 强制显示
         console.log("Wish displayed");
