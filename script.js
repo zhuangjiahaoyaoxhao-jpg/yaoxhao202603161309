@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     createBalloons();
 
     // 2. 获取 DOM 元素
+    const giftCover = document.getElementById('giftCover');
+    const mainContainer = document.getElementById('mainContainer');
     const greetingSection = document.getElementById('greetingSection');
     
     const startWishBtn = document.getElementById('startWishBtn');
@@ -23,8 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const wishContent = document.getElementById('wishContent');
     const giftAlert = document.getElementById('giftAlert');
     const acceptGiftBtn = document.getElementById('acceptGiftBtn');
+    const giftWaitText = document.getElementById('giftWaitText');
+    const giftWaitBar = document.getElementById('giftWaitBar');
+    const openingStatus = document.getElementById('openingStatus');
+    const openingProgress = document.getElementById('openingProgress');
     const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia('(max-width: 768px)').matches;
     let micCleanup = null;
+    let isGiftOpening = false;
+    let greetingSequenceStarted = false;
+    let giftWaitTimer = null;
+    let giftWaitCountdown = null;
     const celebrationMessages = [
         "愿你从今天起，天天都有小惊喜，所有努力都被温柔回应。",
         "愿你心里有光、脚下有路，所遇皆美好，所想皆成真。",
@@ -34,66 +44,134 @@ document.addEventListener('DOMContentLoaded', () => {
         "愿你既有奔赴山海的勇气，也有被爱包围的底气。"
     ];
 
-    // 3. 音乐预加载与控制
+    // 3. 音乐与封面逻辑
     let musicReady = false;
+    let isPlaying = false;
     
-    // 监听音频加载错误
     bgm.addEventListener('error', (e) => {
         console.error("音频加载错误", e);
-        musicControl.innerHTML = "❌ 音乐文件丢失 (birthday.mp3)";
+        musicControl.innerHTML = "❌ 音乐文件丢失";
         musicControl.classList.remove('hidden');
-        musicControl.style.animation = "none";
-        musicControl.style.background = "#ffcccc";
     });
 
-    function initMusic() {
-        if (!musicReady) {
-            bgm.load();
-            bgm.play().then(() => {
-                musicReady = true;
-                musicControl.classList.add('hidden');
-                console.log("音乐已就绪，开始播放");
-                
-                // 标记为正在播放
-                isPlaying = true;
-                voiceBubble.classList.add('playing');
-
-                // 特殊情况：如果当前正好在吹蜡烛界面（理论上不太可能，除非直接跳过），则降低音量
-                if (!candleOverlay.classList.contains('hidden')) {
-                    bgm.volume = 0.2;
-                } else {
-                    bgm.volume = 1.0;
-                }
-            }).catch(e => {
-                console.log("自动播放被阻止，显示手动播放按钮", e);
-                musicControl.classList.remove('hidden');
-            });
+    function applyPlayingState() {
+        musicControl.classList.add('hidden');
+        if (voiceBubble) {
+            voiceBubble.classList.add('playing');
+        }
+        if (!candleOverlay.classList.contains('hidden')) {
+            bgm.volume = 0.2;
+        } else {
+            bgm.volume = 1.0;
         }
     }
 
-    // 监听任意交互事件来初始化音乐 (尽可能早地触发)
-    const interactionEvents = ['click', 'touchstart', 'scroll', 'mousemove', 'keydown'];
-    interactionEvents.forEach(event => {
-        document.body.addEventListener(event, initMusic, { once: true });
+    function applyPausedState() {
+        if (voiceBubble) {
+            voiceBubble.classList.remove('playing');
+        }
+        musicControl.innerHTML = "🔊 点击开启声音";
+        musicControl.classList.remove('hidden');
+    }
+
+    function updateOpeningFlow(percent, text) {
+        if (openingProgress) {
+            openingProgress.style.width = `${percent}%`;
+        }
+        if (openingStatus) {
+            openingStatus.textContent = text;
+        }
+    }
+
+    function revealWishButton() {
+        if (!startWishBtn || !startWishBtn.classList.contains('wish-btn-hidden')) {
+            return;
+        }
+        startWishBtn.disabled = false;
+        startWishBtn.classList.remove('wish-btn-hidden');
+        startWishBtn.classList.add('wish-btn-visible');
+    }
+
+    function startGreetingSequence() {
+        if (greetingSequenceStarted) {
+            return;
+        }
+        greetingSequenceStarted = true;
+        greetingSection.classList.remove('greeting-pending');
+        greetingSection.classList.add('greeting-playing');
+        const finalGreetingLine = greetingSection.querySelector('.delay-5');
+        if (finalGreetingLine) {
+            finalGreetingLine.addEventListener('animationend', revealWishButton, { once: true });
+            setTimeout(revealWishButton, 6200);
+        } else {
+            setTimeout(revealWishButton, 1200);
+        }
+    }
+
+    giftCover.addEventListener('click', async () => {
+        if (isGiftOpening) {
+            return;
+        }
+        isGiftOpening = true;
+        giftCover.style.pointerEvents = 'none';
+
+        // 1. 播放音乐 (由真实用户点击触发，必然成功)
+        try {
+            bgm.muted = false;
+            await bgm.play();
+            musicReady = true;
+            isPlaying = true;
+            applyPlayingState();
+        } catch (err) {
+            console.error("音乐播放依然失败:", err);
+            applyPausedState();
+        }
+
+        updateOpeningFlow(24, '正在松开丝带...');
+        giftCover.classList.add('is-opening');
+        giftCover.classList.add('opening');
+
+        setTimeout(() => {
+            updateOpeningFlow(56, '礼盒正在开启...');
+        }, 360);
+
+        setTimeout(() => {
+            updateOpeningFlow(84, '正在装点惊喜...');
+        }, 760);
+
+        setTimeout(() => {
+            updateOpeningFlow(100, '拆封完成，欢迎进入');
+        }, 1080);
+
+        setTimeout(() => {
+            giftCover.classList.add('hidden');
+            mainContainer.style.opacity = '1';
+            mainContainer.style.pointerEvents = 'auto';
+            startGreetingSequence();
+        }, 1450);
     });
 
-    // 尝试在页面加载完成后立即自动播放
-    setTimeout(() => {
-        initMusic();
-    }, 500);
+    bgm.addEventListener('play', () => {
+        musicReady = true;
+        isPlaying = true;
+        bgm.muted = false;
+        applyPlayingState();
+    });
+    
+    bgm.addEventListener('pause', () => {
+        isPlaying = false;
+        applyPausedState();
+    });
 
     musicControl.addEventListener('click', () => {
         if (isPlaying) {
             bgm.pause();
-            isPlaying = false;
-            voiceBubble.classList.remove('playing');
-            musicControl.innerHTML = "🔇 点击开启音乐";
         } else {
+            bgm.muted = false;
             bgm.play().then(() => {
                 musicReady = true;
                 isPlaying = true;
-                voiceBubble.classList.add('playing');
-                musicControl.classList.add('hidden');
+                applyPlayingState();
             }).catch(e => console.error("播放失败", e));
         }
     });
@@ -239,8 +317,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // 如果之前没有在播放，尝试播放
         if (bgm.paused) {
              bgm.play().catch(e => console.log("恢复播放失败", e));
-             isPlaying = true;
-             voiceBubble.classList.add('playing');
+            isPlaying = true;
+            if (voiceBubble) {
+                voiceBubble.classList.add('playing');
+            }
         }
 
         // 2. 环境变暗 (关灯效果)
@@ -259,7 +339,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 5. 音乐播放逻辑
-    let isPlaying = false;
+    
+    // Steam 兑换码复制功能
+    const copyCdkeyBtn = document.getElementById('copyCdkeyBtn');
+    const steamCdkey = document.getElementById('steamCdkey');
+    const copyStatus = document.getElementById('copyStatus');
+    
+    if (copyCdkeyBtn && steamCdkey) {
+        copyCdkeyBtn.addEventListener('click', () => {
+            const cdkey = steamCdkey.textContent;
+            navigator.clipboard.writeText(cdkey).then(() => {
+                copyStatus.classList.remove('hidden');
+                copyCdkeyBtn.textContent = '已复制';
+                copyCdkeyBtn.style.background = '#5c7e10';
+                
+                setTimeout(() => {
+                    copyStatus.classList.add('hidden');
+                    copyCdkeyBtn.textContent = '复制';
+                    copyCdkeyBtn.style.background = '';
+                }, 3000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动长按选中复制');
+            });
+        });
+    }
 
     function showModal() {
         modal.classList.remove('hidden');
@@ -270,30 +374,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    playVoiceBtn.addEventListener('click', () => {
-        if (isPlaying) {
-            pauseMusic();
-        } else {
-            playMusic();
-        }
-    });
+    if (playVoiceBtn) {
+        playVoiceBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                pauseMusic();
+            } else {
+                playMusic();
+            }
+        });
+    }
 
     function playMusic() {
         bgm.currentTime = 0; // 从头播放
         bgm.play().then(() => {
             isPlaying = true;
-            voiceBubble.classList.add('playing');
+            if (voiceBubble) {
+                voiceBubble.classList.add('playing');
+            }
         }).catch(error => {
             console.log("播放失败:", error);
             isPlaying = false;
-            voiceBubble.classList.remove('playing');
+            if (voiceBubble) {
+                voiceBubble.classList.remove('playing');
+            }
         });
     }
 
     function pauseMusic() {
         bgm.pause();
         isPlaying = false;
-        voiceBubble.classList.remove('playing');
+        if (voiceBubble) {
+            voiceBubble.classList.remove('playing');
+        }
     }
 
     // --- 辅助函数 ---
@@ -383,17 +495,59 @@ document.addEventListener('DOMContentLoaded', () => {
     function startCelebration() {
         console.log("Start Celebration triggered");
         const randomIndex = Math.floor(Math.random() * celebrationMessages.length);
+        const waitSeconds = 5;
         wishContent.textContent = celebrationMessages[randomIndex];
         wishDisplay.classList.remove('hidden');
         wishDisplay.style.opacity = '1'; // 强制显示
-        console.log("Wish displayed");
+        if (giftWaitCountdown) clearInterval(giftWaitCountdown);
+        if (giftWaitTimer) clearTimeout(giftWaitTimer);
 
-        // 5秒后显示礼物提醒
-        setTimeout(() => {
+        const revealGiftAlert = () => {
+            if (!giftAlert.classList.contains('hidden')) {
+                return;
+            }
+            if (giftWaitTimer) {
+                clearTimeout(giftWaitTimer);
+                giftWaitTimer = null;
+            }
             console.log("Gift Alert triggering");
             giftAlert.classList.remove('hidden');
-            giftAlert.style.opacity = '1'; // 强制显示
-        }, 5000); 
+            giftAlert.style.opacity = '1';
+        };
+
+        let secondsLeft = waitSeconds;
+        if (giftWaitBar) {
+            giftWaitBar.style.transition = 'none';
+            giftWaitBar.style.width = '0%';
+            void giftWaitBar.offsetWidth;
+            giftWaitBar.style.transition = `width ${waitSeconds}s linear`;
+            giftWaitBar.addEventListener('transitionend', (event) => {
+                if (event.propertyName === 'width') {
+                    revealGiftAlert();
+                }
+            }, { once: true });
+            requestAnimationFrame(() => {
+                giftWaitBar.style.width = '100%';
+            });
+        }
+        if (giftWaitText) {
+            giftWaitText.textContent = `礼品卡正在准备中，请稍等 ${secondsLeft} 秒…`;
+        }
+        giftWaitCountdown = setInterval(() => {
+            secondsLeft = Math.max(0, secondsLeft - 1);
+            if (giftWaitText) {
+                giftWaitText.textContent = secondsLeft > 0
+                    ? `礼品卡正在准备中，请稍等 ${secondsLeft} 秒…`
+                    : '礼品卡已送达，点击下方按钮查收吧 🎁';
+            }
+            if (secondsLeft === 0) {
+                clearInterval(giftWaitCountdown);
+                giftWaitCountdown = null;
+            }
+        }, 1000);
+        console.log("Wish displayed");
+
+        giftWaitTimer = setTimeout(revealGiftAlert, waitSeconds * 1000 + 250); 
     }
 
     // 礼物查收逻辑
@@ -404,6 +558,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // 隐藏愿望文字，显示贺卡
         wishDisplay.classList.add('hidden');
         wishDisplay.style.opacity = '0';
+        if (giftWaitCountdown) {
+            clearInterval(giftWaitCountdown);
+            giftWaitCountdown = null;
+        }
+        if (giftWaitTimer) {
+            clearTimeout(giftWaitTimer);
+            giftWaitTimer = null;
+        }
         
         showModal();
     });
