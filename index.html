@@ -8,24 +8,40 @@
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 全屏烟花画布 (已移除) -->
-    <!-- <canvas id="fireworksCanvas"></canvas> -->
+    <!-- 礼物封面引导页 -->
+    <div id="giftCover" class="gift-cover active">
+        <div class="gift-box-wrapper">
+            <div class="gift-lid"></div>
+            <div class="gift-box-body">
+                <div class="gift-ribbon-v"></div>
+                <div class="gift-ribbon-h"></div>
+            </div>
+            <div class="gift-bow"></div>
+        </div>
+        <p class="cover-text pulse-text">有一份专属礼物，点击拆开 🎁</p>
+        <div id="openingFlow" class="opening-flow">
+            <p id="openingStatus" class="opening-status">等待拆封中...</p>
+            <div class="opening-track">
+                <span id="openingProgress" class="opening-progress"></span>
+            </div>
+        </div>
+    </div>
 
     <!-- 背景音乐 -->
-    <audio id="bgm" src="birthday.mp3" preload="auto" loop autoplay></audio>
+    <audio id="bgm" src="birthday.mp3" preload="auto" loop></audio>
+
+    <!-- 音乐控制按钮 (悬浮) -->
+    <div id="musicControl" class="music-control hidden">
+        🎶 音乐开启
+    </div>
 
     <div class="background-animation">
         <!-- 动态生成的漂浮元素 -->
     </div>
 
-    <!-- 音乐控制按钮 (悬浮) -->
-    <div id="musicControl" class="music-control hidden">
-        🎶 点击开启音乐
-    </div>
-
-    <div class="container">
+    <div class="container" style="opacity: 0; pointer-events: none;" id="mainContainer">
         <!-- 第一阶段：祝福展示区 -->
-        <section id="greetingSection" class="section active">
+        <section id="greetingSection" class="section active greeting-pending">
             <header>
                 <div class="cake-container">
                     <div class="cake-icon">🎂</div>
@@ -35,16 +51,16 @@
                 </div>
                 <h1 class="title">Happy Birthday!</h1>
                 <div class="message-box">
-                    <p class="typing-text">亲爱的大菜：</p>
-                    <p class="fade-in-text delay-1">在这特别的日子里，</p>
-                    <p class="fade-in-text delay-2">愿你的世界永远充满阳光与欢笑，</p>
-                    <p class="fade-in-text delay-3">愿你眼里的星星永远闪耀，</p>
-                    <p class="fade-in-text delay-4">愿你所有的温柔都被岁月温柔以待。</p>
-                    <p class="fade-in-text delay-5">生日快乐！💖</p>
+                    <p class="typing-text">泽虹，生日快乐呀！</p>
+                    <p class="fade-in-text delay-1">你说我是呆呆的 so 仔，</p>
+                    <p class="fade-in-text delay-2">那今天这个 “猪脑子”，</p>
+                    <p class="fade-in-text delay-3">就祝我的寿星：</p>
+                    <p class="fade-in-text delay-4">眼里有光，</p>
+                    <p class="fade-in-text delay-5">永远被世界温柔爱着！💖</p>
                 </div>
             </header>
             
-            <button id="startWishBtn" class="pulse-button primary-btn">
+            <button id="startWishBtn" class="pulse-button primary-btn wish-btn-hidden" disabled>
                 ✨ 开始许愿 ✨
             </button>
         </section>
@@ -63,16 +79,22 @@
                 <div class="flame" id="flame"></div>
             </div>
             <p class="blow-instruction" id="blowInstruction">
-                请对着麦克风吹气 🌬️<br>
-                <span class="small-hint">( 或者点击火焰熄灭它 )</span>
+                嘿！寿星快许愿啦！<br>
+                <span class="small-hint">许完记得吹蜡烛哦～</span>
             </p>
         </div>
 
         <!-- 愿望展示 (烟花阶段显示) -->
         <div id="wishDisplay" class="wish-display hidden">
-            <h2 class="wish-title">✨ 您的愿望 ✨</h2>
+            <h2 class="wish-title">✨ 生日快乐！！ ✨</h2>
             <p id="wishContent" class="wish-content"></p>
             <p class="wish-sub">把最好的祝福都送给此刻的你 �</p>
+            <div class="gift-wait-hint" id="giftWaitHint">
+                <p id="giftWaitText" class="gift-wait-text">礼品卡正在准备中，请稍等 5 秒…</p>
+                <div class="gift-wait-track">
+                    <span id="giftWaitBar" class="gift-wait-bar"></span>
+                </div>
+            </div>
         </div>
 
         <!-- 礼物提醒弹窗 -->
@@ -84,30 +106,30 @@
             </div>
         </div>
 
-        <!-- 自定义弹窗 (生日贺卡) -->
+        <!-- 自定义弹窗 (Steam游戏礼物卡片) -->
         <div id="modal" class="modal hidden">
-            <div class="modal-content card-style">
+            <div class="modal-content steam-card-style">
                 <div class="card-inner">
-                    <div class="photo-frame">
-                        <!-- 这里可以替换成你的照片 -->
-                        <img src="photo.jpg" alt="Happy Birthday" class="birthday-photo" onerror="this.src='https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1000&auto=format&fit=crop'">
+                    <h3 class="steam-title">🎮 专属 Steam 礼物</h3>
+                    <div class="steam-game-cover">
+                        <!-- 这里替换成你的 Steam 游戏封面图 -->
+                        <img src="./GRIS_photo.jpg" alt="Steam Game Cover" class="game-img">
                     </div>
                     
-                    <div class="card-text">
-                        <h3>Happy Birthday!</h3>
-                        <p class="blessing-text">愿所有的美好都如期而至<br>愿你眼里的星星永远闪耀 ✨</p>
+                    <div class="steam-info">
+                        <p class="blessing-text">愿所有的美好都如期而至<br>希望这款游戏能给你带来快乐！✨</p>
                         
-                        <!-- 模拟语音条 -->
-                        <div class="voice-message-container" id="playVoiceBtn">
-                            <div class="voice-bubble">
-                                <span class="voice-icon">🔊</span>
-                                <span class="voice-wave">
-                                    <span class="bar bar1"></span>
-                                    <span class="bar bar2"></span>
-                                    <span class="bar bar3"></span>
-                                </span>
-                                <span class="voice-duration">点击播放祝福 🎵</span>
+                        <div class="steam-cdkey-box">
+                            <p class="cdkey-label">您的专属兑换码：</p>
+                            <div class="cdkey-container">
+                                <span id="steamCdkey" class="cdkey-text">XXXXX-XXXXX-XXXXX</span>
+                                <button id="copyCdkeyBtn" class="copy-btn">复制</button>
                             </div>
+                            <p id="copyStatus" class="copy-status hidden">✅ 复制成功！快去 Steam 兑换吧</p>
+                        </div>
+                        <div class="steam-guide">
+                            <p class="guide-label">不知道怎么领取？点这里：</p>
+                            <a href="https://my.feishu.cn/wiki/DBFcw6dqDigW0MkdrwXcf3vrnUc?from=from_copylink" target="_blank" rel="noopener noreferrer" class="guide-link">关于steam游戏领取与下载</a>
                         </div>
                         
                         <p class="signature">Best Wishes, For You</p>
