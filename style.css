@@ -32,9 +32,219 @@ body.dark-mode {
 }
 
 body.dark-mode .container {
-    opacity: 1;
-    pointer-events: auto;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
+
+/* =========================================
+   礼物封面引导页样式
+   ========================================= */
+.gift-cover {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #fbc2eb 0%, #a18cd1 100%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 1s ease, transform 1s ease;
+    cursor: pointer;
+}
+
+.gift-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.32) 50%, transparent 80%);
+    transform: translateX(-120%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.gift-cover.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1.1);
+}
+
+.gift-box-wrapper {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin-bottom: 40px;
+    animation: floatGift 3s ease-in-out infinite;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.gift-cover:hover .gift-box-wrapper {
+    transform: scale(1.1);
+}
+
+.gift-cover.is-opening {
+    cursor: default;
+}
+
+.gift-cover.is-opening::after {
+    opacity: 1;
+    animation: unwrapSweep 1.2s ease forwards;
+}
+
+.gift-box-body {
+    position: absolute;
+    bottom: 0;
+    left: 10px;
+    width: 130px;
+    height: 100px;
+    background: #ff758c;
+    border-radius: 5px;
+    box-shadow: inset -10px -10px 20px rgba(0,0,0,0.1);
+}
+
+.gift-lid {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    width: 150px;
+    height: 30px;
+    background: #ff7eb3;
+    border-radius: 5px;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+    z-index: 2;
+    transition: transform 0.5s ease;
+}
+
+.gift-cover.opening .gift-lid {
+    transform: translateY(-50px) rotate(-15deg);
+    opacity: 0;
+}
+
+.gift-cover.is-opening .gift-box-wrapper {
+    animation: unwrapPulse 0.9s ease-in-out infinite;
+}
+
+.gift-ribbon-v {
+    position: absolute;
+    top: 0;
+    left: 55px;
+    width: 20px;
+    height: 100%;
+    background: #ffeaa7;
+}
+
+.gift-ribbon-h {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: #ffeaa7;
+}
+
+.gift-bow {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 30px;
+    z-index: 3;
+}
+
+.gift-bow::before, .gift-bow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    background: #ffeaa7;
+    border-radius: 50% 50% 0 50%;
+    transform: rotate(45deg);
+}
+
+.gift-bow::after {
+    left: 30px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+}
+
+.cover-text {
+    font-size: 1.5rem;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    text-align: center;
+    padding: 0 20px;
+}
+
+.pulse-text {
+    animation: pulseText 2s infinite;
+}
+
+.opening-flow {
+    margin-top: 18px;
+    width: min(360px, 80vw);
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(4px);
+}
+
+.opening-status {
+    color: #ffffff;
+    font-size: 0.92rem;
+    margin-bottom: 8px;
+    letter-spacing: 0.4px;
+}
+
+.opening-track {
+    width: 100%;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+}
+
+.opening-progress {
+    display: block;
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ffeaa7 0%, #ffffff 60%, #a8edea 100%);
+    transition: width 0.35s ease;
+}
+
+@keyframes floatGift {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+@keyframes pulseText {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes unwrapSweep {
+    0% {
+        transform: translateX(-120%);
+    }
+    100% {
+        transform: translateX(120%);
+    }
+}
+
+@keyframes unwrapPulse {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    50% {
+        transform: scale(1.06) rotate(-1deg);
+    }
+}
+
+/* ========================================= */
 
 body.dark-mode .background-animation {
     opacity: 0.08;
@@ -180,19 +390,42 @@ body.dark-mode .background-animation {
     border-radius: 15px;
     margin-bottom: 30px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    text-align: left;
+    text-align: center;
     font-size: 1.1rem;
     line-height: 1.8;
 }
 
 .message-box p {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     color: #444;
+}
+
+.typing-text {
+    font-size: 1.22rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 14px;
+    letter-spacing: 0.5px;
 }
 
 .fade-in-text {
     opacity: 0;
     animation: fadeIn 1s forwards;
+    transform: translateY(4px);
+    letter-spacing: 0.2px;
+}
+
+#greetingSection.greeting-pending .typing-text {
+    opacity: 0;
+}
+
+#greetingSection.greeting-pending .fade-in-text {
+    opacity: 0;
+    animation-play-state: paused;
+}
+
+#greetingSection.greeting-playing .typing-text {
+    animation: fadeIn 0.45s forwards;
 }
 
 .delay-1 { animation-delay: 0.5s; }
@@ -202,7 +435,10 @@ body.dark-mode .background-animation {
 .delay-5 { animation-delay: 4.5s; }
 
 @keyframes fadeIn {
-    to { opacity: 1; }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* 按钮样式 */
@@ -229,6 +465,18 @@ body.dark-mode .background-animation {
 
 .pulse-button {
     animation: pulse 2s infinite;
+}
+
+.wish-btn-hidden {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+}
+
+.wish-btn-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 @keyframes pulse {
@@ -451,34 +699,60 @@ textarea:focus {
 }
 
 .blow-instruction {
-    color: white;
-    font-size: 1.2rem;
+    color: #fff;
+    font-size: 1.02rem;
+    font-weight: 700;
     text-align: center;
-    margin-top: 20px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    animation: fadeIn 2s infinite alternate;
+    margin-top: 24px;
+    line-height: 1.45;
+    letter-spacing: 0.3px;
+    text-shadow: 0 2px 10px rgba(255, 198, 140, 0.35), 0 1px 8px rgba(0,0,0,0.45);
+    background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+    border: 1px solid rgba(255,255,255,0.24);
+    border-radius: 14px;
+    padding: 10px 14px;
+    backdrop-filter: blur(3px);
+    min-width: 250px;
+    animation: instructionGlow 2.2s ease-in-out infinite;
 }
 
 .small-hint {
-    font-size: 0.8rem;
-    opacity: 0.7;
+    font-size: 0.86rem;
+    font-weight: 500;
+    opacity: 0.92;
     display: block;
-    margin-top: 5px;
+    margin-top: 4px;
+    color: #ffe7bd;
+}
+
+@keyframes instructionGlow {
+    0%, 100% {
+        transform: translateY(0);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+    }
+    50% {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 26px rgba(255, 201, 143, 0.24);
+    }
 }
 
 
 /* 愿望展示样式 */
 .wish-display {
     position: fixed;
-    top: 30%;
+    top: 34%;
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
     z-index: 2500; /* 确保在烟花画布(999)和覆盖层(2000)之上 */
     color: white;
-    text-shadow: 0 0 10px rgba(255, 105, 180, 0.8), 0 0 20px rgba(0, 0, 0, 0.5);
-    width: 90%;
-    max-width: 600px;
+    text-shadow: 0 0 10px rgba(255, 105, 180, 0.8), 0 0 20px rgba(0, 0, 0, 0.55);
+    width: min(92vw, 760px);
+    padding: 18px 18px 16px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(20, 20, 26, 0.58), rgba(20, 20, 26, 0.35));
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     opacity: 0;
     animation: fadeInWish 2s forwards;
     pointer-events: none; 
@@ -495,23 +769,58 @@ textarea:focus {
 }
 
 .wish-title {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
+    font-size: clamp(1.2rem, 3.2vw, 1.6rem);
+    margin-bottom: 12px;
     color: #ffd700;
 }
 
 .wish-content {
-    font-size: 2rem;
+    font-size: clamp(1.55rem, 5.1vw, 2.15rem);
     font-weight: bold;
-    margin-bottom: 15px;
-    line-height: 1.4;
+    margin-bottom: 12px;
+    line-height: 1.48;
     font-family: 'Noto Serif SC', serif;
+    letter-spacing: 0.6px;
+    word-break: break-word;
 }
 
 .wish-sub {
-    font-size: 1rem;
-    opacity: 0.8;
-    margin-top: 15px;
+    font-size: clamp(0.9rem, 2.5vw, 1.02rem);
+    opacity: 0.92;
+    margin-top: 6px;
+}
+
+.gift-wait-hint {
+    margin: 14px auto 0;
+    width: min(86%, 460px);
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(14, 20, 33, 0.58);
+}
+
+.gift-wait-text {
+    font-size: 0.92rem;
+    color: #ffe9bf;
+    margin: 0 0 8px;
+    letter-spacing: 0.2px;
+}
+
+.gift-wait-track {
+    width: 100%;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.gift-wait-bar {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #ffd089 0%, #ffd700 45%, #ff9fd2 100%);
+    transition: width 5s linear;
 }
 
 /* 礼物提醒弹窗 */
@@ -576,6 +885,152 @@ textarea:focus {
     transform: scale(1.05);
 }
 
+/* =========================================
+   Steam 礼物卡片专属样式
+   ========================================= */
+
+.steam-card-style {
+    background: linear-gradient(145deg, #1b2838 0%, #2a475e 100%);
+    border: 2px solid #66c0f4;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(102, 192, 244, 0.3);
+    color: #c7d5e0;
+}
+
+.steam-title {
+    font-size: 1.8rem;
+    color: #ffffff;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    font-family: 'Noto Serif SC', serif;
+}
+
+.steam-game-cover {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    border: 1px solid #4a6b82;
+}
+
+.game-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.game-img:hover {
+    transform: scale(1.05);
+}
+
+.steam-info .blessing-text {
+    color: #e5e5e5;
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.steam-cdkey-box {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px dashed #4a6b82;
+    margin-bottom: 20px;
+}
+
+.cdkey-label {
+    font-size: 0.9rem;
+    color: #8f98a0;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.cdkey-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #171a21;
+    padding: 10px 15px;
+    border-radius: 4px;
+    border: 1px solid #323e4c;
+}
+
+.cdkey-text {
+    font-family: monospace;
+    font-size: 1.2rem;
+    color: #66c0f4;
+    letter-spacing: 1px;
+    user-select: all; /* 允许用户直接选中复制 */
+}
+
+.copy-btn {
+    background: linear-gradient(to right, #47bfff 0%, #1a44c2 60%);
+    background-position: 25%;
+    background-size: 330% 100%;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.copy-btn:hover {
+    background-position: 100%;
+    transform: scale(1.05);
+}
+
+.copy-btn:active {
+    transform: scale(0.95);
+}
+
+.copy-status {
+    color: #a4d007;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.steam-guide {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(102, 192, 244, 0.1);
+    border: 1px solid rgba(102, 192, 244, 0.45);
+}
+
+.guide-label {
+    font-size: 0.9rem;
+    color: #b8d7ea;
+    margin-bottom: 8px;
+}
+
+.guide-link {
+    display: block;
+    color: #ffffff;
+    background: linear-gradient(to right, #66c0f4, #1a9fff);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 6px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.guide-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+.steam-info .signature {
+    color: #66c0f4;
+    font-family: 'Dancing Script', cursive;
+    font-size: 1.5rem;
+    margin-top: 20px;
+}
+
 /* 弹窗样式 */
 .modal {
     position: fixed;
@@ -583,20 +1038,28 @@ textarea:focus {
     left: 0;
     width: 100%;
     height: 100%;
-    /* 背景更深一点，突出文字烟花和弹窗 */
-    background: rgba(0, 0, 0, 0.3); 
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 4000;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2500;
-    opacity: 1;
-    transition: opacity 0.5s ease;
-    backdrop-filter: blur(2px); /* 增加一点模糊感 */
+    opacity: 0;
+    transition: opacity 0.5s;
 }
 
 .modal.hidden {
-    opacity: 0;
     pointer-events: none;
+}
+
+.modal-content {
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    position: relative;
+    width: 90%;
+    max-width: 450px;
+    transform: scale(0.8);
+    animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .modal-content.card-style {
@@ -810,6 +1273,11 @@ textarea:focus {
         overflow-y: auto;
     }
 
+    .typing-text {
+        font-size: 1.08rem;
+        margin-bottom: 10px;
+    }
+
     /* 按钮调整：增大点击区域，更适合手指 */
     .primary-btn {
         padding: 12px 30px;
@@ -848,9 +1316,12 @@ textarea:focus {
     }
 
     .blow-instruction {
-        font-size: 1.1rem;
-        width: 85%;
-        line-height: 1.7;
+        font-size: 0.96rem;
+        width: min(88vw, 330px);
+        line-height: 1.42;
+        padding: 9px 12px;
+        border-radius: 12px;
+        margin-top: 18px;
     }
 
     /* 弹窗调整 */
@@ -867,10 +1338,82 @@ textarea:focus {
         font-size: 1.1rem;
     }
 
+    .wish-display {
+        top: 37%;
+        width: 92vw;
+        padding: 14px 12px 12px;
+        border-radius: 14px;
+    }
+
+    .wish-title {
+        margin-bottom: 8px;
+    }
+
+    .wish-content {
+        font-size: 1.72rem;
+        line-height: 1.42;
+        margin-bottom: 8px;
+    }
+
+    .wish-sub {
+        font-size: 0.92rem;
+        line-height: 1.5;
+    }
+
+    .gift-wait-hint {
+        width: 94%;
+        padding: 9px 10px;
+        margin-top: 10px;
+    }
+
+    .gift-wait-text {
+        font-size: 0.82rem;
+        margin-bottom: 6px;
+    }
+
     /* 气球调整：移动端可以稍微减少气球大小 */
     .balloon {
         width: 40px;
         height: 50px;
+    }
+
+    /* 礼物封面在移动端的适配 */
+    .gift-box-wrapper {
+        transform: scale(0.9);
+        margin-bottom: 30px;
+    }
+    
+    .cover-text {
+        font-size: 1.25rem;
+    }
+
+    .opening-flow {
+        width: 88vw;
+        padding: 10px 12px;
+    }
+
+    .opening-status {
+        font-size: 0.84rem;
+    }
+
+    .cdkey-container {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .cdkey-text {
+        font-size: 1.05rem;
+        text-align: center;
+    }
+
+    .copy-btn {
+        width: 100%;
+    }
+
+    .guide-link {
+        width: 100%;
+        text-align: center;
     }
 }
 
@@ -879,4 +1422,14 @@ textarea:focus {
     .title { font-size: 2.5rem; }
     .message-box { font-size: 0.9rem; padding: 15px; }
     h2 { font-size: 1.3rem; }
+    .wish-display {
+        top: 39%;
+        padding: 12px 10px 10px;
+    }
+    .wish-content {
+        font-size: 1.45rem;
+    }
+    .wish-sub {
+        font-size: 0.86rem;
+    }
 }
